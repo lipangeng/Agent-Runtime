@@ -6,6 +6,9 @@ on:
     tags: [ "*" ]
   pull_request:
     branches: [ "*" ]
+permissions:
+  contents: read
+  packages: write
 
 jobs:
   build:

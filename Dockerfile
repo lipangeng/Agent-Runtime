@@ -36,7 +36,7 @@ RUN set -eux ;\
 RUN set -eux ;\
     \
     groupadd -g 1024 agent ;\
-    useradd -u 1024 -g agent -m agent ;\
+    useradd -u 1024 -g agent -m agent -s /bin/bash ;\
     echo "agent ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/agent ;\
     \
     mkdir /workspace ;\
