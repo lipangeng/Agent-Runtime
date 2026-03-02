@@ -39,7 +39,7 @@ RUN set -eux ;\
     useradd -u 1024 -g agent -m agent ;\
     echo "agent ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/agent ;\
     \
-    RUN mkdir /workspace ;\
+    mkdir /workspace ;\
     chown agent:agent /workspace
 
 USER agent
