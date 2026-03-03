@@ -45,7 +45,3 @@ RUN set -eux ;\
 USER agent
 
 WORKDIR /workspace
-
-ENTRYPOINT ["/sbin/tini","--"]
-
-CMD ["bash"]
