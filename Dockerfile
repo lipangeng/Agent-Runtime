@@ -33,7 +33,18 @@ ENV MISE_ROOT=/opt/mise \
 	PATH=/opt/mise/data/mise/shims:$PATH
 
 RUN set -eux ;\
-    apt-get update -y;\
+    \
+    groupadd -g 1024 agent ;\
+    useradd -u 1024 -g agent -m agent -s /bin/bash ;\
+    echo "agent ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/agent ;\
+    \
+    mkdir /workspace ;\
+    chown -R agent:agent /workspace /opt/mise
+
+USER agent
+
+RUN set -eux ;\
+    sudo apt-get update -y;\
   	\
     mise use -g node@lts ;\
     \
@@ -44,19 +55,8 @@ RUN set -eux ;\
     \
     mise reshim ;\
     \
-    apt-get clean ;\
-    rm -rf /var/lib/apt/lists/* ;\
-    rm -rf /tmp/*
-
-RUN set -eux ;\
-    \
-    groupadd -g 1024 agent ;\
-    useradd -u 1024 -g agent -m agent -s /bin/bash ;\
-    echo "agent ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/agent ;\
-    \
-    mkdir /workspace ;\
-    chown agent:agent /workspace /opt/mise
-
-USER agent
+    sudo apt-get clean ;\
+    sudo rm -rf /var/lib/apt/lists/* ;\
+    sudo rm -rf /tmp/*
 
 WORKDIR /workspace
