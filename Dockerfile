@@ -20,7 +20,7 @@ RUN set -eux ;\
     echo "deb [signed-by=/etc/apt/keyrings/mise-archive-keyring.asc] https://mise.jdx.dev/deb stable main" | sudo tee /etc/apt/sources.list.d/mise.list ;\
     apt update -y ;\
     apt install -y mise ;\
-    mkdir -p /opt/mise/{config,data,cache,shims,bin} ;\
+    mkdir -p /opt/mise/{config,data,cache} ;\
     \
     apt-get clean ;\
     rm -rf /var/lib/apt/lists/* ;\
@@ -30,7 +30,7 @@ ENV MISE_ROOT=/opt/mise \
 	XDG_CACHE_HOME=/opt/mise/cache \
 	XDG_DATA_HOME=/opt/mise/data \
 	XDG_CONFIG_HOME=/opt/mise/config \
-	PATH=/opt/mise/shims:/opt/mise/bin:$PATH
+	PATH=/opt/mise/data/shims:$PATH
 
 RUN set -eux ;\
     apt-get update -y;\
