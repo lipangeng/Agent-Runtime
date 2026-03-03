@@ -21,17 +21,11 @@ RUN set -eux ;\
     apt update -y ;\
     apt install -y mise ;\
     mkdir -p /opt/mise/{config,data,cache} ;\
-    echo 'PATH=/opt/mise/data/mise/shims:$PATH' >> /etc/profile ;\
+    echo 'PATH=~/.local/share/mise/shims:$PATH' >> /etc/profile ;\
     \
     apt-get clean ;\
     rm -rf /var/lib/apt/lists/* ;\
     rm -rf /tmp/*
-
-ENV MISE_ROOT=/opt/mise \
-	XDG_CACHE_HOME=/opt/mise/cache \
-	XDG_DATA_HOME=/opt/mise/data \
-	XDG_CONFIG_HOME=/opt/mise/config \
-	PATH=/opt/mise/data/mise/shims:$PATH
 
 RUN set -eux ;\
     \
@@ -43,6 +37,10 @@ RUN set -eux ;\
     chown -R agent:agent /workspace /opt/mise
 
 USER agent
+
+WORKDIR /workspace
+
+ENV PATH=/home/agent/.local/share/mise/shims:$PATH
 
 RUN set -eux ;\
     sudo apt-get update -y;\
@@ -59,5 +57,3 @@ RUN set -eux ;\
     sudo apt-get clean ;\
     sudo rm -rf /var/lib/apt/lists/* ;\
     sudo rm -rf /tmp/*
-
-WORKDIR /workspace
