@@ -21,6 +21,7 @@ RUN set -eux ;\
     apt update -y ;\
     apt install -y mise ;\
     mkdir -p /opt/mise/{config,data,cache} ;\
+    echo 'PATH=/opt/mise/data/mise/shims:$PATH' >> /etc/profile ;\
     \
     apt-get clean ;\
     rm -rf /var/lib/apt/lists/* ;\
