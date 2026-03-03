@@ -48,7 +48,7 @@ RUN set -eux ;\
     mise use -g node@lts ;\
     \
     mise exec -- npm install -g playwright@latest @playwright/cli@latest ;\
-    mise exec -- playwright install --with-deps chrome ;\
+    mise exec -- playwright install --with-deps chromium ;\
     \
     mise exec -- npm cache clean --force || true ;\
     \
