@@ -1,7 +1,7 @@
 FROM docker.rarely.pro/library/debian:latest
 
 RUN set -eux ;\
-    apt-get update ;\
+    apt-get update -y;\
     \
     apt-get install -y \
         bash zsh fish openssl sudo \
@@ -11,27 +11,46 @@ RUN set -eux ;\
       	unzip zip bash-completion \
         fontconfig fonts-dejavu zlib1g \
         gnupg ca-certificates p11-kit tzdata \
-    	nodejs npm python3 \
+    	python3 python3-venv python3-pip \
     	git gh pandoc \
     	;\
+    \
+    install -dm 755 /etc/apt/keyrings ;\
+    curl -fSs https://mise.jdx.dev/gpg-key.pub | sudo tee /etc/apt/keyrings/mise-archive-keyring.asc 1> /dev/null ;\
+    echo "deb [signed-by=/etc/apt/keyrings/mise-archive-keyring.asc] https://mise.jdx.dev/deb stable main" | sudo tee /etc/apt/sources.list.d/mise.list ;\
+    apt update -y ;\
+    apt install -y mise ;\
+    mkdir -p /opt/mise/{config,data,cache,shims,bin} ;\
     \
     apt-get clean ;\
     rm -rf /var/lib/apt/lists/* ;\
     rm -rf /tmp/*
 
+ENV MISE_ROOT=/opt/mise \
+	XDG_CACHE_HOME=/opt/mise/cache \
+	XDG_DATA_HOME=/opt/mise/data \
+	XDG_CONFIG_HOME=/opt/mise/config \
+	PATH=/opt/mise/shims:/opt/mise/bin:$PATH
+
 RUN set -eux ;\
-    apt-get update ;\
+    apt-get update -y;\
+  	\
+    mise use -g node@lts \
     \
-    npm install -g playwright@latest @playwright/cli@latest ;\
-    playwright-cli install ;\
-    playwright install-deps chrome ;\
+    mise exec -- npm install -g playwright@latest @playwright/cli@latest ;\
+    mise exec -- playwright install --with-deps chrome ;\
     \
-    npm cache clean --force ;\
-    rm -rf ~/.npm/_npx ;\
+    mise exec -- npm cache clean --force || true ;\
     \
     apt-get clean ;\
     rm -rf /var/lib/apt/lists/* ;\
     rm -rf /tmp/*
+
+COPY rootfs/ /
+
+RUN set -eux ;\
+    \
+    chmod +x /usr/local/bin/playwright-cli
 
 RUN set -eux ;\
     \
@@ -40,7 +59,7 @@ RUN set -eux ;\
     echo "agent ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/agent ;\
     \
     mkdir /workspace ;\
-    chown agent:agent /workspace
+    chown agent:agent /workspace /opt/mise
 
 USER agent
 
