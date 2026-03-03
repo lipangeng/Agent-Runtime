@@ -42,15 +42,11 @@ RUN set -eux ;\
     \
     mise exec -- npm cache clean --force || true ;\
     \
+    mise reshim ;\
+    \
     apt-get clean ;\
     rm -rf /var/lib/apt/lists/* ;\
     rm -rf /tmp/*
-
-COPY rootfs/ /
-
-RUN set -eux ;\
-    \
-    chmod +x /usr/local/bin/playwright-cli
 
 RUN set -eux ;\
     \
