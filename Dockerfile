@@ -35,7 +35,7 @@ ENV MISE_ROOT=/opt/mise \
 RUN set -eux ;\
     apt-get update -y;\
   	\
-    mise use -g node@lts \
+    mise use -g node@lts ;\
     \
     mise exec -- npm install -g playwright@latest @playwright/cli@latest ;\
     mise exec -- playwright install --with-deps chrome ;\
