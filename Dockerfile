@@ -30,7 +30,7 @@ ENV MISE_ROOT=/opt/mise \
 	XDG_CACHE_HOME=/opt/mise/cache \
 	XDG_DATA_HOME=/opt/mise/data \
 	XDG_CONFIG_HOME=/opt/mise/config \
-	PATH=/opt/mise/data/shims:$PATH
+	PATH=/opt/mise/data/mise/shims:$PATH
 
 RUN set -eux ;\
     apt-get update -y;\
