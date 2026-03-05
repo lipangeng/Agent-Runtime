@@ -425,6 +425,97 @@ docker ps
 - 为敏感目录单独卷并做好权限隔离。
 - 若使用 Docker Socket，明确其高权限风险；优先考虑 rootless 外置引擎。
 
+## 文件系统访问策略（只读 / 可读写）
+
+Agent 任务通常需要访问项目文件。基于 Docker 的最佳实践是显式区分只读挂载与可写挂载路径。
+
+### 为什么需要这层控制
+
+- 限制错误命令或异常脚本导致的破坏范围。
+- 降低误覆盖、误删除宿主项目文件的风险。
+- 让“哪里可写”在配置层可审计、可排查。
+
+### 推荐模型
+
+- 代码和配置默认只读挂载。
+- 单独提供可写目录用于产物、缓存、临时文件。
+- 尽量开启容器根文件系统只读，再按需开放最小写路径。
+
+### 本地 Docker 示例
+
+项目只读 + 输出目录可写：
+
+```bash
+docker run --rm -it \
+  --read-only \
+  --tmpfs /tmp:rw,nosuid,nodev,size=512m \
+  -v "$PWD:/workspace:ro" \
+  -v "$PWD/.agent-output:/workspace/.agent-output:rw" \
+  -w /workspace \
+  ghcr.io/lipangeng/agent-runtime:main \
+  bash
+```
+
+当 Agent 必须改动仓库文件时：
+
+```bash
+docker run --rm -it \
+  -v "$PWD:/workspace:rw" \
+  -w /workspace \
+  ghcr.io/lipangeng/agent-runtime:main \
+  bash
+```
+
+### Docker Compose 示例
+
+```yaml
+services:
+  codex:
+    image: ghcr.io/lipangeng/agent-runtime:main
+    read_only: true
+    tmpfs:
+      - /tmp:size=512m
+    volumes:
+      - ./project:/workspace:ro
+      - ./agent-output:/workspace/.agent-output:rw
+```
+
+如果确实需要写回项目，仅将项目挂载改为 `:rw`，其他路径继续收敛权限。
+
+### Kubernetes 示例
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: agent-runtime
+spec:
+  containers:
+    - name: agent
+      image: ghcr.io/lipangeng/agent-runtime:main
+      securityContext:
+        readOnlyRootFilesystem: true
+      volumeMounts:
+        - name: project
+          mountPath: /workspace
+          readOnly: true
+        - name: agent-output
+          mountPath: /workspace/.agent-output
+  volumes:
+    - name: project
+      persistentVolumeClaim:
+        claimName: project-pvc
+    - name: agent-output
+      emptyDir: {}
+```
+
+### 场景建议
+
+- 只读审查/分析任务：项目 `ro`，输出目录 `rw`。
+- CI 报告生成：项目 `ro`，报告与日志目录 `rw`。
+- 重构/代码生成任务：项目 `rw`，但根文件系统与无关路径继续最小化可写权限。
+- 多租户共享宿主：优先项目默认 `ro`，按租户显式分配独立可写目录。
+
 ## Mise 使用建议
 
 本项目建议使用 `mise` 统一管理语言与构建工具版本。

@@ -374,6 +374,97 @@ This image prioritizes operability. For production hardening:
 - use least-privilege mounts and writable paths
 - treat Docker socket mount as high risk; prefer external rootless engines where possible
 
+## Filesystem Access Strategy (Read-only / Read-write)
+
+Agent workflows often need project file access. In Docker environments, the safest baseline is to explicitly separate read-only and writable mount paths.
+
+### Why this matters
+
+- limit blast radius when an agent or script makes incorrect file operations
+- reduce accidental overwrite/deletion risk on host project data
+- make writable intent explicit for auditing and troubleshooting
+
+### Recommended model
+
+- mount source code/config as read-only by default
+- provide dedicated writable paths for outputs (artifacts/cache/temp)
+- use container-level read-only root filesystem where possible, then selectively open writable mounts
+
+### Local Docker examples
+
+Read-only project + writable output directory:
+
+```bash
+docker run --rm -it \
+  --read-only \
+  --tmpfs /tmp:rw,nosuid,nodev,size=512m \
+  -v "$PWD:/workspace:ro" \
+  -v "$PWD/.agent-output:/workspace/.agent-output:rw" \
+  -w /workspace \
+  ghcr.io/lipangeng/agent-runtime:main \
+  bash
+```
+
+When the agent must modify repository files:
+
+```bash
+docker run --rm -it \
+  -v "$PWD:/workspace:rw" \
+  -w /workspace \
+  ghcr.io/lipangeng/agent-runtime:main \
+  bash
+```
+
+### Docker Compose example
+
+```yaml
+services:
+  codex:
+    image: ghcr.io/lipangeng/agent-runtime:main
+    read_only: true
+    tmpfs:
+      - /tmp:size=512m
+    volumes:
+      - ./project:/workspace:ro
+      - ./agent-output:/workspace/.agent-output:rw
+```
+
+If write-back to project is required, switch only the project mount to `:rw` and keep other paths restricted.
+
+### Kubernetes example
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: agent-runtime
+spec:
+  containers:
+    - name: agent
+      image: ghcr.io/lipangeng/agent-runtime:main
+      securityContext:
+        readOnlyRootFilesystem: true
+      volumeMounts:
+        - name: project
+          mountPath: /workspace
+          readOnly: true
+        - name: agent-output
+          mountPath: /workspace/.agent-output
+  volumes:
+    - name: project
+      persistentVolumeClaim:
+        claimName: project-pvc
+    - name: agent-output
+      emptyDir: {}
+```
+
+### Scenario mapping
+
+- Review/analysis-only tasks: project `ro`, output path `rw`
+- CI report generation: project `ro`, artifact/log path `rw`
+- Refactor or code generation tasks: project `rw`, but keep root filesystem and unrelated mounts constrained
+- Multi-tenant shared host: strongly prefer default `ro` project mounts and explicit per-tenant writable directories
+
 ## Recommendation: Use mise for Toolchain Management
 
 `mise` is recommended for unified language/toolchain management.
