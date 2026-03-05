@@ -112,6 +112,14 @@ The image uses:
 
 `tini` runs as PID 1 for signal forwarding and child reaping. `entrypoint.sh` handles initialization, then executes the target process.
 
+### Why this design
+
+This entrypoint model is intentionally designed to:
+
+- make runtime initialization easier and more repeatable
+- make startup command customization easier without rebuilding image layers
+- reduce the cost of maintaining many customized derivative images
+
 ### Execution flow
 
 1. optional usage message: `/entrypoint.d/usage.sh` (if present)
@@ -172,6 +180,16 @@ docker run --rm -it \
   -e REAL_ENTRYPOINT=/usr/local/bin/custom-entrypoint.sh \
   ghcr.io/lipangeng/agent-runtime:main -- my-app --flag value
 ```
+
+### Future direction with Agent SKILL
+
+For agent-oriented workflows, this mechanism can be combined with SKILL:
+
+- let the agent record project-specific environment requirements
+- let the agent generate/update init scripts under `/entrypoint.d/user/`
+- on next container restart, recover the same environment quickly via deterministic init scripts
+
+This improves environment consistency across restarts and across multi-project agent sessions.
 
 ## Recommended Access Modes: Attach and Exec
 

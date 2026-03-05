@@ -113,6 +113,14 @@ docker run -d \
 
 其中 `tini` 作为 PID 1，负责信号转发与僵尸进程回收；`entrypoint.sh` 负责初始化流程，然后再执行主命令。
 
+### 采用该设计的原因
+
+这套入口机制的设计目标是：
+
+- 让运行环境初始化更简单、可重复
+- 让启动命令的定制更容易，不必频繁重建镜像层
+- 降低维护大量定制镜像的成本
+
 ### 执行流程
 
 1. 可选展示使用提示：`/entrypoint.d/usage.sh`（存在才执行）
@@ -173,6 +181,16 @@ docker run --rm -it \
   -e REAL_ENTRYPOINT=/usr/local/bin/custom-entrypoint.sh \
   ghcr.io/lipangeng/agent-runtime:main -- my-app --flag value
 ```
+
+### 与 Agent SKILL 的后续配合方向
+
+面向 Agent 工作流，这套机制后续可以与 SKILL 配合：
+
+- 让 Agent 记录项目所需的环境依赖
+- 让 Agent 自动生成/更新 `/entrypoint.d/user/` 下的初始化脚本
+- 在后续重启时，通过这些脚本快速恢复一致的环境状态
+
+这样可以提升重启后的环境一致性，尤其适用于多项目并行的 Agent 场景。
 
 ## 推荐连接方式：Attach 与 Exec
 
