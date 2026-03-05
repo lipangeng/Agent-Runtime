@@ -40,6 +40,9 @@ When experimenting with agent toolchains, many environments suffer from:
 - `Node.js LTS` environment
 - `Playwright + Chrome` ready
 - `tmux` for interactive debugging
+- structured entrypoint pipeline (`/entrypoint.d/system` + `/entrypoint.d/user`) for easier runtime initialization
+- easier startup command customization without frequently rebuilding custom images
+- lower long-term maintenance cost for multiple runtime variants
 
 ## Design Philosophy
 
@@ -190,6 +193,32 @@ For agent-oriented workflows, this mechanism can be combined with SKILL:
 - on next container restart, recover the same environment quickly via deterministic init scripts
 
 This improves environment consistency across restarts and across multi-project agent sessions.
+
+### Example SKILL concept (idea only)
+
+This is still a concept, not a finalized built-in feature.
+
+Possible SKILL behavior:
+
+1. inspect current project for required runtimes/tools (Node/Python/system packages)
+2. generate a deterministic init script, for example `/entrypoint.d/user/20-project-env.sh`
+3. write/update project env metadata (for review and reuse)
+4. on next restart, entrypoint replays the script and restores the same environment baseline
+
+Minimal example script that a SKILL could generate:
+
+```bash
+#!/usr/bin/env bash
+set -e
+mise use -g node@20
+python3 -m pip install -r /workspace/requirements.txt
+```
+
+Example scenario:
+
+- Day 1: agent analyzes project dependencies and generates `20-project-env.sh`.
+- Day 2: container restarts (or rescheduled), entrypoint runs the script automatically.
+- Result: runtime/tooling baseline is restored quickly with less manual setup drift.
 
 ## Recommended Access Modes: Attach and Exec
 

@@ -38,6 +38,9 @@
 - `Node.js LTS` 运行环境
 - `Playwright + Chrome` 就绪
 - 内置 `tmux`，便于交互式调试
+- 结构化 Entrypoint 流程（`/entrypoint.d/system` + `/entrypoint.d/user`），便于运行时初始化
+- 启动命令更容易定制，无需频繁重建定制镜像
+- 降低多运行时变体的长期维护成本
 
 ## 设计理念
 
@@ -191,6 +194,32 @@ docker run --rm -it \
 - 在后续重启时，通过这些脚本快速恢复一致的环境状态
 
 这样可以提升重启后的环境一致性，尤其适用于多项目并行的 Agent 场景。
+
+### SKILL 示例设想（仅为想法）
+
+这一部分目前仍是设想，不是内置完成能力。
+
+可能的 SKILL 行为：
+
+1. 扫描当前项目所需的运行时与工具（Node/Python/系统包）
+2. 生成确定性的初始化脚本，例如 `/entrypoint.d/user/20-project-env.sh`
+3. 写入或更新项目环境元数据，方便审查和复用
+4. 下次重启时由 entrypoint 自动回放脚本，恢复同一环境基线
+
+SKILL 可能生成的最小脚本示例：
+
+```bash
+#!/usr/bin/env bash
+set -e
+mise use -g node@20
+python3 -m pip install -r /workspace/requirements.txt
+```
+
+示例场景：
+
+- 第一天：Agent 分析项目依赖并生成 `20-project-env.sh`
+- 第二天：容器重启或被重新调度，entrypoint 自动执行该脚本
+- 结果：运行时与工具链基线快速恢复，减少人工初始化和环境漂移
 
 ## 推荐连接方式：Attach 与 Exec
 
