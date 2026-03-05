@@ -1,4 +1,4 @@
-FROM docker.rarely.pro/library/debian:latest
+FROM debian:latest
 
 RUN set -eux ;\
     apt-get update -y;\
@@ -26,6 +26,13 @@ RUN set -eux ;\
     apt-get clean ;\
     rm -rf /var/lib/apt/lists/* ;\
     rm -rf /tmp/*
+
+COPY rootfs/ /
+
+RUN set -eux ;\
+    \
+    chmox +x /usr/local/bin/entrypoint.sh ;\
+    mkdir -pv /entrypoint.d/user /entrypoint.d/system
 
 RUN set -eux ;\
     \
@@ -57,3 +64,7 @@ RUN set -eux ;\
     sudo apt-get clean ;\
     sudo rm -rf /var/lib/apt/lists/* ;\
     sudo rm -rf /tmp/*
+
+ENTRYPOINT ["/usr/bin/tini","--","/usr/local/bin/entrypoint.sh"]
+
+CMD ["bash"]

@@ -96,7 +96,6 @@ docker pull ghcr.io/lipangeng/agent-runtime:main
 ```bash
 docker run -d \
   --name codex-runtime \
-  --init \
   -it \
   -v "$PWD:/workspace" \
   -w /workspace \
