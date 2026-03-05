@@ -7,6 +7,47 @@
 - English（默认）: `README.md`
 - 简体中文: `README.zh-CN.md`
 
+## 快速概览
+
+`Agent-Runtime` 是一个面向 AI Agent 工具链的通用基础运行时镜像。  
+它提供一致的容器环境，内置调试工具、浏览器自动化支持，以及可直接落地的部署模式。
+
+该运行时不绑定特定框架，可用于：
+
+- `Codex`
+- `OpenCode`
+- `OpenClaw`
+- 其他自定义 Agent 系统
+
+## 项目存在的原因
+
+在实践 Agent 工具链时，常见问题包括：
+
+- 容器内缺少调试工具
+- 浏览器自动化依赖脆弱、易出问题
+- 文件挂载与读写权限策略不清晰
+- 网络与代理配置复杂且容易失效
+
+`Agent-Runtime` 的目标是提供一个务实的基础镜像来解决这些问题。
+
+## 关键特性
+
+- 默认非 root 用户运行
+- 常见诊断工具齐全（`tcpdump`、`strace`、`nmap` 等）
+- 常见开发工具齐全（`git`、`python`、`pip`、`jq`、`cmake`）
+- `Node.js LTS` 运行环境
+- `Playwright + Chrome` 就绪
+- 内置 `tmux`，便于交互式调试
+
+## 设计理念
+
+`Agent-Runtime` 有意不实现 Agent 框架本身。  
+它专注运行时层，编排、隔离与策略由下层平台负责：
+
+- Docker
+- Docker Compose
+- Kubernetes
+
 本项目的目标不是绑定单一产品，而是为 `Codex`、`OpenCode`、`OpenClaw` 等 Agent 类工具提供统一、可操作、可扩展的容器运行环境，并通过容器层与宿主环境实现隔离。
 
 ## 设计目标

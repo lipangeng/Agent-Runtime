@@ -9,6 +9,47 @@ Language versions:
 - English (default): `README.md`
 - 简体中文: `README.zh-CN.md`
 
+## Quick Overview
+
+`Agent-Runtime` is a general-purpose base runtime image for AI agent toolchains.  
+It provides a consistent container environment with debugging tools, browser automation support, and practical deployment patterns for running agents.
+
+The runtime is framework-agnostic and can be used with tools such as:
+
+- `Codex`
+- `OpenCode`
+- `OpenClaw`
+- other custom agent systems
+
+## Why This Project Exists
+
+When experimenting with agent toolchains, many environments suffer from:
+
+- missing debugging tools inside containers
+- fragile browser automation dependencies
+- unclear file permission and mount strategies
+- networking and proxy configuration issues
+
+`Agent-Runtime` attempts to provide a practical base image that addresses these issues.
+
+## Key Features
+
+- non-root user by default
+- common diagnostics tools (`tcpdump`, `strace`, `nmap`, etc.)
+- development utilities (`git`, `python`, `pip`, `jq`, `cmake`)
+- `Node.js LTS` environment
+- `Playwright + Chrome` ready
+- `tmux` for interactive debugging
+
+## Design Philosophy
+
+`Agent-Runtime` intentionally does not implement an agent framework.  
+Instead it focuses on the runtime layer, while orchestration, isolation, and policies are handled by:
+
+- Docker
+- Docker Compose
+- Kubernetes
+
 ## Design Goals
 
 - Provide an out-of-the-box runtime to reduce duplicated environment setup per agent.
