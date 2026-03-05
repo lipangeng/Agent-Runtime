@@ -43,6 +43,7 @@ When experimenting with agent toolchains, many environments suffer from:
 - structured entrypoint pipeline (`/entrypoint.d/system` + `/entrypoint.d/user`) for easier runtime initialization
 - easier startup command customization without frequently rebuilding custom images
 - lower long-term maintenance cost for multiple runtime variants
+- designed to work with Agent SKILL ideas for environment requirement recording and restart-time consistency recovery
 
 ## Design Philosophy
 

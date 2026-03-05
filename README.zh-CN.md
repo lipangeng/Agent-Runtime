@@ -41,6 +41,7 @@
 - 结构化 Entrypoint 流程（`/entrypoint.d/system` + `/entrypoint.d/user`），便于运行时初始化
 - 启动命令更容易定制，无需频繁重建定制镜像
 - 降低多运行时变体的长期维护成本
+- 便于与 Agent SKILL 设想配合，记录环境需求并在重启后恢复环境一致性
 
 ## 设计理念
 
