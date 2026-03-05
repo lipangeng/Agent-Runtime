@@ -103,6 +103,76 @@ docker run -d \
   bash
 ```
 
+## Container Entrypoint Behavior
+
+The image uses:
+
+- `ENTRYPOINT ["/usr/bin/tini","--","/usr/local/bin/entrypoint.sh"]`
+- `CMD ["bash"]`
+
+`tini` runs as PID 1 for signal forwarding and child reaping. `entrypoint.sh` handles initialization, then executes the target process.
+
+### Execution flow
+
+1. optional usage message: `/entrypoint.d/usage.sh` (if present)
+2. run system init scripts: `/entrypoint.d/system/*`
+3. run user init scripts: `/entrypoint.d/user/*`
+4. execute final command (from `CMD` or runtime args)
+
+### Init script rules
+
+- scripts are processed in version order (`sort -V`)
+- only `*.sh` files are handled
+- executable `*.sh` files are executed
+- non-executable `*.sh` files are sourced
+
+This allows both “run script” and “mutate current shell environment” styles.
+
+### Entrypoint controls (env vars)
+
+- `SKIP_SYSTEM_ENTRYPOINT=1`: skip `/entrypoint.d/system/*`
+- `SKIP_USER_ENTRYPOINT=1`: skip `/entrypoint.d/user/*`
+- `REAL_ENTRYPOINT=/path/to/script-or-binary`: execute a delegated real entrypoint after init
+
+If `REAL_ENTRYPOINT` is set but the target file is missing/unreadable, container startup fails fast.
+
+### Command mode behavior
+
+After initialization:
+
+- if first arg is a valid command (`command -v` succeeds), run `exec "$@"`
+- otherwise fallback to shell parsing mode: `exec /bin/sh -c "exec $*"`
+
+The fallback is useful for platforms that pass command as a single string.
+
+### Practical examples
+
+Mount init scripts:
+
+```bash
+docker run --rm -it \
+  -v "$PWD/entrypoint.d/system:/entrypoint.d/system:ro" \
+  -v "$PWD/entrypoint.d/user:/entrypoint.d/user:ro" \
+  ghcr.io/lipangeng/agent-runtime:main
+```
+
+Skip both init stages:
+
+```bash
+docker run --rm -it \
+  -e SKIP_SYSTEM_ENTRYPOINT=1 \
+  -e SKIP_USER_ENTRYPOINT=1 \
+  ghcr.io/lipangeng/agent-runtime:main bash
+```
+
+Delegate to real entrypoint:
+
+```bash
+docker run --rm -it \
+  -e REAL_ENTRYPOINT=/usr/local/bin/custom-entrypoint.sh \
+  ghcr.io/lipangeng/agent-runtime:main -- my-app --flag value
+```
+
 ## Recommended Access Modes: Attach and Exec
 
 Both `docker attach` and `docker exec` are recommended. Use them based on workload.

@@ -104,6 +104,76 @@ docker run -d \
   bash
 ```
 
+## 容器 Entrypoint 机制
+
+镜像当前使用：
+
+- `ENTRYPOINT ["/usr/bin/tini","--","/usr/local/bin/entrypoint.sh"]`
+- `CMD ["bash"]`
+
+其中 `tini` 作为 PID 1，负责信号转发与僵尸进程回收；`entrypoint.sh` 负责初始化流程，然后再执行主命令。
+
+### 执行流程
+
+1. 可选展示使用提示：`/entrypoint.d/usage.sh`（存在才执行）
+2. 执行系统初始化脚本：`/entrypoint.d/system/*`
+3. 执行用户初始化脚本：`/entrypoint.d/user/*`
+4. 执行最终主命令（来自 `CMD` 或运行时参数）
+
+### 初始化脚本规则
+
+- 按版本顺序处理（`sort -V`）
+- 只处理 `*.sh` 文件
+- 可执行的 `*.sh`：直接执行
+- 不可执行的 `*.sh`：使用 `source` 导入当前 shell
+
+这样可以同时支持“子进程执行脚本”和“修改当前 shell 环境”两种模式。
+
+### Entrypoint 控制项（环境变量）
+
+- `SKIP_SYSTEM_ENTRYPOINT=1`：跳过 `/entrypoint.d/system/*`
+- `SKIP_USER_ENTRYPOINT=1`：跳过 `/entrypoint.d/user/*`
+- `REAL_ENTRYPOINT=/path/to/script-or-binary`：初始化后转交给真实入口继续执行
+
+如果设置了 `REAL_ENTRYPOINT` 但文件不存在或不可读，容器会快速失败退出。
+
+### 命令执行模式
+
+初始化完成后：
+
+- 如果第一个参数是有效命令（`command -v` 成功），执行 `exec "$@"`
+- 否则回退到 shell 解析模式：`exec /bin/sh -c "exec $*"`
+
+回退模式适合某些平台只传单字符串命令的场景。
+
+### 实用示例
+
+挂载初始化脚本目录：
+
+```bash
+docker run --rm -it \
+  -v "$PWD/entrypoint.d/system:/entrypoint.d/system:ro" \
+  -v "$PWD/entrypoint.d/user:/entrypoint.d/user:ro" \
+  ghcr.io/lipangeng/agent-runtime:main
+```
+
+跳过系统与用户初始化：
+
+```bash
+docker run --rm -it \
+  -e SKIP_SYSTEM_ENTRYPOINT=1 \
+  -e SKIP_USER_ENTRYPOINT=1 \
+  ghcr.io/lipangeng/agent-runtime:main bash
+```
+
+转交到自定义真实入口：
+
+```bash
+docker run --rm -it \
+  -e REAL_ENTRYPOINT=/usr/local/bin/custom-entrypoint.sh \
+  ghcr.io/lipangeng/agent-runtime:main -- my-app --flag value
+```
+
 ## 推荐连接方式：Attach 与 Exec
 
 `docker attach` 与 `docker exec` 都是本项目推荐方式，二者适用于不同场景。
