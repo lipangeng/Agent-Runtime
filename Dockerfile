@@ -31,7 +31,7 @@ COPY rootfs/ /
 
 RUN set -eux ;\
     \
-    chmox +x /usr/local/bin/entrypoint.sh ;\
+    chmod +x /usr/local/bin/entrypoint.sh ;\
     mkdir -pv /entrypoint.d/user /entrypoint.d/system
 
 RUN set -eux ;\
