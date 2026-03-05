@@ -154,21 +154,25 @@ tmux attach -t agent
 3. 将 DNS 指向 `sing-box` 内部 DNS 或你定义的上游。
 4. 在 `sing-box` 内实现分流规则（直连/代理/拦截），避免全量代理导致延迟放大。
 
-### 关键注意：必须配置 DNS，防止 DNS 逃逸
+### 关键注意：Tun 模式下必须处理 Docker 默认 DNS
 
-如果只配置了代理转发，但没有明确把 DNS 解析收敛到 `sing-box`，容器可能继续使用默认 DNS，导致 DNS 请求逃逸到本地网络。
+在 `tun` 模式里，最常见的问题不是“忘记配 DNS 规则”，而是 Docker 默认 DNS（通常是 `127.0.0.11`）优先级更高。
 
-这会产生典型问题：
+结果是：
 
-1. 你配置了某些域名应“通过代理链路解析和访问”。
-2. 但 DNS 请求逃逸后，先解析到了本地/区域最优 IP。
-3. 真实访问却走远端代理出口，出现“解析位置”和“访问出口”不一致。
-4. 结果是连接绕路、RTT 变大、吞吐下降，最终比直连更慢。
+1. 容器先把 DNS 请求发给 `127.0.0.11`（Docker 内置 DNS）。
+2. 这个查询路径不会进入 `sing-box` 的 `tun` 入站。
+3. 你在 `sing-box` 里配置的代理解析/分流解析规则不生效。
+4. 某些应走代理解析的域名被解析为本地出口更“近”的 IP。
+5. 实际连接却走远端代理出口，解析与访问出口错位，速度反而变慢。
 
-因此，`sing-box` 旁路代理要生效，必须同时完成两件事：
+结论：`tun` 模式要实现稳定加速，必须同时保证“流量进 tun”与“DNS 查询也受 sing-box 管控”。
 
-- 流量代理策略正确。
-- DNS 解析链路也纳入 `sing-box` 规则（含分流域名策略）。
+推荐做法：
+
+- 在编排层显式设置 DNS，避免容器落回 `127.0.0.11`。
+- 在 `sing-box` 中配置 `dns.servers`、`dns.rules` 与 `hijack-dns` 协同工作。
+- 启动后检查 `/etc/resolv.conf`，确认不是 Docker 内置回环 DNS。
 
 ### 参考 Compose 结构（最小示意）
 
@@ -179,12 +183,102 @@ services:
     cap_add: [NET_ADMIN]
     sysctls:
       net.ipv4.ip_forward: "1"
+    dns:
+      - 10.10.0.254
     command: ["run", "-c", "/etc/sing-box/config.json"]
 
   codex:
     image: ghcr.io/lipangeng/agent-runtime:main
     network_mode: "service:CodeNet"
     depends_on: [CodeNet]
+```
+
+### 参考配置（脱敏示例，基于你的 tun 方案）
+
+以下示例已做脱敏处理，可作为结构参考：
+
+```json
+{
+  "log": {
+    "level": "info"
+  },
+  "dns": {
+    "servers": [
+      {
+        "tag": "direct",
+        "type": "udp",
+        "server": "DIRECT_DNS_IP"
+      },
+      {
+        "tag": "Mirror",
+        "type": "udp",
+        "server": "PROXY_DNS_IP",
+        "detour": "Mirror"
+      }
+    ],
+    "rules": [
+      {
+        "action": "route",
+        "rule_set": "Mirror",
+        "server": "Mirror"
+      }
+    ],
+    "final": "direct",
+    "reverse_mapping": true
+  },
+  "inbounds": [
+    {
+      "type": "tun",
+      "tag": "sing-box",
+      "interface_name": "sing-box",
+      "address": ["172.18.0.1/24"],
+      "mtu": 1450,
+      "stack": "system",
+      "auto_route": true,
+      "strict_route": true,
+      "auto_redirect": true
+    }
+  ],
+  "outbounds": [
+    {
+      "type": "direct",
+      "tag": "direct"
+    },
+    {
+      "type": "socks",
+      "tag": "Mirror",
+      "server": "PROXY_HOST_OR_IP",
+      "server_port": 6000
+    }
+  ],
+  "route": {
+    "rules": [
+      {
+        "action": "sniff"
+      },
+      {
+        "protocol": "dns",
+        "action": "hijack-dns"
+      },
+      {
+        "action": "route",
+        "rule_set": "Mirror",
+        "outbound": "Mirror"
+      }
+    ],
+    "rule_set": [
+      {
+        "type": "remote",
+        "tag": "Mirror",
+        "format": "binary",
+        "url": "https://YOUR_RULESET_ENDPOINT/Mirror.srs"
+      }
+    ],
+    "final": "direct",
+    "auto_detect_interface": true,
+    "default_domain_resolver": "direct"
+  }
+}
 ```
 
 ### 价值与代价
