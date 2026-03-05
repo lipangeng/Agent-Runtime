@@ -101,4 +101,4 @@ GitHub Actions 在 push/pr 时构建并推送镜像到 GHCR：
 
 ## 许可证
 
-当前仓库未声明许可证。若需公开分发，建议补充 `LICENSE`。
+本项目使用 Apache License 2.0，详见 `LICENSE`。
