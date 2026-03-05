@@ -1,4 +1,4 @@
-FROM debian:latest
+FROM docker.rarely.pro/library/debian:latest
 
 RUN set -eux ;\
     apt-get update -y;\
@@ -31,7 +31,7 @@ RUN set -eux ;\
     echo 'Components: stable' >> /etc/apt/sources.list.d/docker.sources ;\
     echo 'Signed-By: /etc/apt/keyrings/docker.asc' >> /etc/apt/sources.list.d/docker.sources ;\
     apt-get update -y ;\
-    apt-get install -y docker-ce-cli ;\
+    apt-get install -y docker-ce-cli docker-buildx-plugin docker-compose-plugin ;\
     \
     apt-get clean ;\
     rm -rf /var/lib/apt/lists/* ;\
