@@ -63,7 +63,7 @@ ENV PATH=/home/agent/.local/share/mise/shims:$PATH \
 
 RUN set -eux ;\
     sudo apt-get update -y;\
-    sudo apt install chromium ;\
+    sudo apt install -y chromium ;\
   	\
     mise use -g node@lts ;\
     \
