@@ -57,15 +57,17 @@ USER agent
 
 WORKDIR /workspace
 
-ENV PATH=/home/agent/.local/share/mise/shims:$PATH
+ENV PATH=/home/agent/.local/share/mise/shims:$PATH \
+	PLAYWRIGHT_MCP_SANDBOX=true \
+	PLAYWRIGHT_MCP_EXECUTABLE_PATH=/usr/bin/chromium
 
 RUN set -eux ;\
     sudo apt-get update -y;\
+    sudo apt install chromium ;\
   	\
     mise use -g node@lts ;\
     \
-    mise exec -- npm install -g playwright@latest @playwright/cli@latest ;\
-    mise exec -- playwright install --with-deps chrome ;\
+    mise exec -- npm install -g @playwright/cli@latest ;\
     \
     mise exec -- npm cache clean --force || true ;\
     \
